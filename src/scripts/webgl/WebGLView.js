@@ -35,6 +35,7 @@ export default class WebGLView {
     this.initControls();
     await this.loadLogoTexture();
     // this.initPostProcessing();
+    this.initMainCrystal();
     this.initRenderTri();
   }
 
@@ -48,6 +49,8 @@ export default class WebGLView {
 
     this.clock = new THREE.Clock();
   }
+
+  initMainCrystal() {}
 
   loadLogoTexture() {
     return new Promise((res, rej) => {
@@ -94,21 +97,28 @@ export default class WebGLView {
       fragmentShader: `
 				precision highp float;
 				uniform sampler2D uScene;
+				uniform sampler2D uLogoTexture;
 				uniform vec2 uResolution;
 				uniform float uTime;
 				
 				void main() {
 					vec2 uv = gl_FragCoord.xy / uResolution.xy;
 					vec4 color = texture2D(uScene, uv);
-
-					// wavy line
-					// float x = uv.x;
-					// float m = sin(x * 8.0 + uTime) * 0.3;
-					// uv.y -= m;
-					// float line = smoothstep(0.4, 0.5, uv.y) * smoothstep(0.6, 0.5, uv.y);
-					// color = mix(color, vec4(1.0), line);
+					vec4 logoColor = texture2D(uLogoTexture, uv);
 					
-					gl_FragColor = vec4(color);
+					vec3 refractVec1 = refract(vec3(0.0, 0.0, 1.0), logoColor.rgb, 0.2);
+					vec3 refractVec2 = refract(vec3(0.05, 0.0, 1.0), logoColor.rgb, 0.2);
+					vec3 refractVec3 = refract(vec3(-0.05, 0.0, 1.0), logoColor.rgb, 0.2);
+
+					vec4 color1 = texture2D(uScene, uv + (refractVec1.xy * 0.5));
+					vec4 color2 = texture2D(uScene, uv + (refractVec2.xy * 0.5));
+					vec4 color3 = texture2D(uScene, uv + (refractVec3.xy * 0.5));
+
+					vec4 chromAberrColor = vec4(color1.r, color2.g, color3.b, 1.0) * logoColor.a;
+
+					chromAberrColor += color;
+					
+					gl_FragColor = vec4(chromAberrColor);
 				}
 			`,
       vertexShader: `
@@ -125,6 +135,10 @@ export default class WebGLView {
         uScene: {
           type: 't',
           value: this.particlesRt.texture
+        },
+        uLogoTexture: {
+          type: 't',
+          value: this.logoTexture
         },
         uResolution: { value: resolution },
         uTime: {
@@ -166,7 +180,7 @@ export default class WebGLView {
   }
 
   initLights() {
-    this.pointLight = new THREE.PointLight(0xff0000, 1, 100);
+    this.pointLight = new THREE.PointLight(0xffffff, 1, 100);
     this.pointLight.position.set(0, 0, 50);
     this.particlesRtScene.add(this.pointLight);
   }
@@ -235,7 +249,8 @@ export default class WebGLView {
       roughness: 0.5,
       metalness: 0.3,
       reflectivity: 1,
-      clearcoat: 1
+      clearcoat: 1,
+      color: 0xffffff
     });
     return new THREE.Mesh(geo, mat);
   }
