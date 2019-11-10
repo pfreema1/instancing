@@ -1,43 +1,17 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, minimum-scale=1, maximum-scale=1, user-scalable=no"
-    />
-    <title>MEOW</title>
-    <link rel="stylesheet" href="styles/main.css" />
-  </head>
-  <body>
-    <div class="container"></div>
-    <script id="vertexShader" type="x-shader/x-vertex">
-      precision highp float;
 
-      uniform mat4 modelViewMatrix;
-      uniform mat4 projectionMatrix;
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, minimum-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>MEOW</title>
+  <link rel="stylesheet" href="styles/main.css" />
+</head>
 
-      attribute vec3 position;
-      attribute vec3 offset;
-      attribute vec4 color;
+<body>
+  <div class="container"></div>
 
-      varying vec3 vPosition;
-      varying vec3 vColor;
+<script type="text/javascript" src="scripts/index.5d1ecf0873d49c3ba121.js"></script></body>
 
-      void main() {
-        vColor = vec3(color);
-        vPosition = offset + position;
-
-        gl_Position = projectionMatrix * modelViewMatrix * vec4(vPosition, 1.0);
-      }
-    </script>
-
-    <script id="fragmentShader" type="x-shader/x-fragment">
-      precision highp float;
-      varying vec3 vColor;
-      void main() {
-      	gl_FragColor = vec4( vColor, 1.0 );
-      }
-    </script>
-  <script type="text/javascript" src="scripts/index.7dd4e91ef019789eaa81.js"></script></body>
 </html>
