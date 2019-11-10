@@ -33,7 +33,11 @@ export default class WebGLView {
 		this.PARAMS = {
 			edgesThickness: 3.26,
 			edgesRenderStrength: 21.14,
-			chromaticAberrMod: 0.98
+			chromaticAberrMod: 0.22,
+			pointLightColor: '#fff0ff',
+			pointLightIntensity: 1,
+			pointLightDistance: 500,
+			pointLightDecay: 1,
 		};
 
 		this.pane = new Tweakpane();
@@ -79,6 +83,13 @@ export default class WebGLView {
 				this.triMaterial.uniforms.chromaticAberrMod.value = value;
 				// fsQuadUniforms.chromaticAberrMod.value = value;
 			});
+
+		// point light
+		const pl = this.pane.addFolder({ title: 'Point Light' });
+		pl.addInput(this.PARAMS, 'pointLightColor').on('change', value => {
+			this.pointLight.color = value;
+		})
+
 	}
 
 	initThree() {
@@ -262,7 +273,7 @@ export default class WebGLView {
 	}
 
 	initLights() {
-		this.pointLight = new THREE.PointLight(0xfff0ff, 1, 100);
+		this.pointLight = new THREE.PointLight(this.PARAMS.pointLightColor, this.PARAMS.pointLightIntensity, this.PARAMS.pointLightDistance, this.PARAMS.pointLightDecay);
 		this.pointLight.position.set(0, 0, 50);
 		this.particlesRtScene.add(this.pointLight);
 	}
