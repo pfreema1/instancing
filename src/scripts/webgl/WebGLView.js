@@ -52,9 +52,48 @@ export default class WebGLView {
 		this.mainCrystal = new Crystal(this.PARAMS);
 		this.addPaneParams();
 
-		this.initRenderTri();
+		this.resize();
 
-		this.renderTri = new RenderTri(this.renderer);
+		this.initParticlesBlurTri();
+		this.initCrystalRenderTri();
+
+	}
+
+	initParticlesBlurTri() {
+		this.particlesBlurTri = new RenderTri(this.renderer, null, null, null);
+	}
+
+	initCrystalRenderTri() {
+		this.crystalRenderTri = new RenderTri(this.renderer, crystalFrag, crystalVert, this.returnCrystalRenderTriUniforms());
+		this.scene.add(this.crystalRenderTri.mesh);
+
+	}
+
+	returnCrystalRenderTriUniforms() {
+		return {
+			bgTexture: {
+				type: 't',
+				value: this.particlesRt.texture
+			},
+			normalsTexture: {
+				type: 't',
+				value: this.mainCrystal.rt.normals.texture
+			},
+			edgesTexture: {
+				type: 't',
+				value: this.mainCrystal.rt.edges.texture
+			},
+			edgesRenderStrength: {
+				value: this.PARAMS.edgesRenderStrength
+			},
+			chromaticAberrMod: {
+				value: this.PARAMS.chromaticAberrMod
+			},
+			uResolution: { value: this.resolution },
+			uTime: {
+				value: 0.0
+			}
+		}
 	}
 
 	addPaneParams() {
@@ -105,73 +144,6 @@ export default class WebGLView {
 		this.clock = new THREE.Clock();
 	}
 
-	returnRenderTriGeometry() {
-		const geometry = new THREE.BufferGeometry();
-
-		// triangle in clip space coords
-		const vertices = new Float32Array([-1.0, -1.0, 3.0, -1.0, -1.0, 3.0]);
-		const uvs = new Float32Array([0, 0, 2, 0, 0, 2]);
-
-		geometry.addAttribute('position', new THREE.BufferAttribute(vertices, 2));
-		geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
-
-		return geometry;
-	}
-
-	initRenderTri() {
-		// mostly taken from here: https://medium.com/@luruke/simple-postprocessing-in-three-js-91936ecadfb7
-
-		this.resize();
-		const geometry = this.returnRenderTriGeometry();
-
-		const resolution = new THREE.Vector2();
-		this.renderer.getDrawingBufferSize(resolution);
-
-		this.RenderTriTarget = new THREE.WebGLRenderTarget(
-			resolution.x,
-			resolution.y,
-			{
-				format: THREE.RGBFormat,
-				stencilBuffer: false,
-				depthBuffer: true
-			}
-		);
-
-		this.triMaterial = new THREE.RawShaderMaterial({
-			vertexShader: glslify(crystalVert),
-			fragmentShader: glslify(crystalFrag),
-			uniforms: {
-				bgTexture: {
-					type: 't',
-					value: this.particlesRt.texture
-				},
-				normalsTexture: {
-					type: 't',
-					value: this.mainCrystal.rt.normals.texture
-				},
-				edgesTexture: {
-					type: 't',
-					value: this.mainCrystal.rt.edges.texture
-				},
-				edgesRenderStrength: {
-					value: this.PARAMS.edgesRenderStrength
-				},
-				chromaticAberrMod: {
-					value: this.PARAMS.chromaticAberrMod
-				},
-				uResolution: { value: resolution },
-				uTime: {
-					value: 0.0
-				}
-			}
-		});
-
-		console.log(this.triMaterial);
-
-		let renderTri = new THREE.Mesh(geometry, this.triMaterial);
-		renderTri.frustumCulled = false;
-		this.scene.add(renderTri);
-	}
 
 	initParticlesRenderTarget() {
 		this.particlesRt = new THREE.WebGLRenderTarget(
@@ -358,6 +330,7 @@ export default class WebGLView {
 				this.mainCrystal.cameras.normals
 			);
 			this.renderer.setRenderTarget(null);
+
 
 			this.renderer.render(this.scene, this.camera);
 			// this.renderer.render(this.mainCrystal.scenes.normals, this.mainCrystal.cameras.normals);

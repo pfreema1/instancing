@@ -30,9 +30,9 @@ void main() {
     vec3 refractVec1 = refract(vec3(0.0, 0.0, 1.0), normal, chromaticAberrMod);
     vec3 refractVec2 = refract(vec3(0.05, 0.0, 1.0), normal, chromaticAberrMod);
     vec3 refractVec3 = refract(vec3(-0.05, 0.0, 1.0), normal, chromaticAberrMod);
-    vec4 refractColor1 = texture2D(bgTexture, vUv + (refractVec1.xy * edgesColor.r));
-    vec4 refractColor2 = texture2D(bgTexture, vUv + (refractVec2.xy * edgesColor.r));
-    vec4 refractColor3 = texture2D(bgTexture, vUv + (refractVec3.xy * edgesColor.r));
+    vec4 refractColor1 = texture2D(bgTexture, vUv + (refractVec1.xy * edgeVal));
+    vec4 refractColor2 = texture2D(bgTexture, vUv + (refractVec2.xy * edgeVal));
+    vec4 refractColor3 = texture2D(bgTexture, vUv + (refractVec3.xy * edgeVal));
 
     vec4 chromAberrColor = vec4(refractColor1.r, refractColor2.g, refractColor3.b, 1.0);
 
