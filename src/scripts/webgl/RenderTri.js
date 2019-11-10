@@ -1,32 +1,10 @@
 // mostly taken from here: https://medium.com/@luruke/simple-postprocessing-in-three-js-91936ecadfb7
 
 import * as THREE from 'three';
+import glslify from 'glslify';
 
-const defaultVertexShader = `precision highp float;
-  attribute vec2 position;
-  
-  void main() {
-    // Look ma! no projection matrix multiplication,
-    // because we pass the values directly in clip space coordinates.
-    gl_Position = vec4(position, 1.0, 1.0);
-  }`;
-
-const defaultFragmentShader = `precision highp float;
-  uniform sampler2D uScene;
-  uniform vec2 uResolution;
-  
-  void main() {
-    vec2 uv = gl_FragCoord.xy / uResolution.xy;
-    vec3 color = vec3(uv, 1.0);
-    color = texture2D(uScene, uv).rgb;
-  
-    // Do your cool postprocessing here
-    color.r += sin(uv.x * 50.0);
-  
-    gl_FragColor = vec4(color, 1.0);
-  }`;
-
-
+import defaultVertexShader from '../../shaders/defaultRenderTri.vert'
+import defaultFragmentShader from '../../shaders/defaultRenderTri.frag'
 
 export default class RenderTri {
     constructor(renderer, fragmentShader, vertexShader, uniforms) {
@@ -55,8 +33,8 @@ export default class RenderTri {
         this.uniforms = uniforms ? uniforms : this.returnDefaultUniforms();
         this.material = new THREE.RawShaderMaterial({
             uniforms: this.uniforms,
-            fragmentShader: this.fragmentShader,
-            vertexShader: this.vertexShader
+            fragmentShader: glslify(this.fragmentShader),
+            vertexShader: glslify(this.vertexShader)
         });
     }
 
