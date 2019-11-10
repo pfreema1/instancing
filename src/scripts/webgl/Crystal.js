@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 
-export default class MainCrystal {
+export default class Crystal {
     constructor(PARAMS) {
         this.PARAMS = PARAMS;
 

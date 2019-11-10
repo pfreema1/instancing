@@ -10,7 +10,7 @@ import {
 } from 'postprocessing';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
 import { FaceNormalsHelper, Float32BufferAttribute } from 'three';
-import MainCrystal from './MainCrystal';
+import Crystal from './Crystal';
 import Tweakpane from 'tweakpane';
 
 function remap(t, old_min, old_max, new_min, new_max) {
@@ -31,7 +31,9 @@ export default class WebGLView {
 
 	async init() {
 		this.PARAMS = {
-			edgesThickness: 3.0
+			edgesThickness: 3.26,
+			edgesRenderStrength: 21.14,
+			chromaticAberrMod: 0.98
 		};
 
 		this.pane = new Tweakpane();
@@ -42,7 +44,7 @@ export default class WebGLView {
 		this.initControls();
 		await this.loadLogoTexture();
 		// this.initPostProcessing();
-		this.mainCrystal = new MainCrystal(this.PARAMS);
+		this.mainCrystal = new Crystal(this.PARAMS);
 		this.addPaneParams();
 
 		this.initRenderTri();
@@ -56,6 +58,26 @@ export default class WebGLView {
 		})
 			.on('change', value => {
 				this.mainCrystal.meshes.edges.material.uniforms.u_edgesThickness.value = value;
+			});
+
+		this.pane
+			.addInput(this.PARAMS, 'edgesRenderStrength', {
+				min: 0.1,
+				max: 24.0
+			})
+			.on('change', value => {
+				this.triMaterial.uniforms.edgesRenderStrength.value = value;
+				// fsQuadUniforms.edgesRenderStrength.value = value;
+			});
+
+		this.pane
+			.addInput(this.PARAMS, 'chromaticAberrMod', {
+				min: 0.0,
+				max: 10.0
+			})
+			.on('change', value => {
+				this.triMaterial.uniforms.chromaticAberrMod.value = value;
+				// fsQuadUniforms.chromaticAberrMod.value = value;
 			});
 	}
 
@@ -86,8 +108,10 @@ export default class WebGLView {
 
 		// triangle in clip space coords
 		const vertices = new Float32Array([-1.0, -1.0, 3.0, -1.0, -1.0, 3.0]);
+		const uvs = new Float32Array([0, 0, 2, 0, 0, 2]);
 
 		geometry.addAttribute('position', new THREE.BufferAttribute(vertices, 2));
+		geometry.addAttribute('uv', new THREE.BufferAttribute(uvs, 2));
 
 		return geometry;
 	}
@@ -113,50 +137,90 @@ export default class WebGLView {
 
 		this.triMaterial = new THREE.RawShaderMaterial({
 			fragmentShader: `
-				precision highp float;
-				uniform sampler2D uScene;
-				uniform sampler2D uLogoTexture;
-				uniform vec2 uResolution;
-				uniform float uTime;
-				
+				precision mediump float;
+				#define sat(x) clamp(x, 0.0, 1.0);
+
+				uniform sampler2D bgTexture;
+				uniform sampler2D normalsTexture;
+				uniform sampler2D edgesTexture;
+				uniform float edgesRenderStrength;
+				uniform float chromaticAberrMod;
+
+				varying vec2 vUv;
+
+				float remap01(float a, float b, float t) {
+					return sat((t - a) / (b - a));
+				}
+
+
+				float remap(float a, float b, float c, float d, float t) {
+						return remap01(a, b, t) * (d - c) + c;
+				}
+
 				void main() {
-					vec2 uv = gl_FragCoord.xy / uResolution.xy;
-					vec4 color = texture2D(uScene, uv);
-					vec4 logoColor = texture2D(uLogoTexture, uv);
-					
-					vec3 refractVec1 = refract(vec3(0.0, 0.0, 1.0), logoColor.rgb, 0.2);
-					vec3 refractVec2 = refract(vec3(0.05, 0.0, 1.0), logoColor.rgb, 0.2);
-					vec3 refractVec3 = refract(vec3(-0.05, 0.0, 1.0), logoColor.rgb, 0.2);
+					vec4 bgColor = texture2D(bgTexture, vUv);
+					vec4 normalColor = texture2D(normalsTexture, vUv);
+					vec4 edgesColor = texture2D(edgesTexture, vUv);
+					vec3 normal = normalize(normalColor.rgb * 2.0 - 1.0);
 
-					vec4 color1 = texture2D(uScene, uv + (refractVec1.xy * 0.5));
-					vec4 color2 = texture2D(uScene, uv + (refractVec2.xy * 0.5));
-					vec4 color3 = texture2D(uScene, uv + (refractVec3.xy * 0.5));
+					// remap edges color
+					float edgeVal = remap(0.0, 1.0, 0.0, 0.7, edgesColor.r);
 
-					vec4 chromAberrColor = vec4(color1.r, color2.g, color3.b, 1.0) * logoColor.a;
+					vec3 refractVec1 = refract(vec3(0.0, 0.0, 1.0), normal, chromaticAberrMod);
+					vec3 refractVec2 = refract(vec3(0.05, 0.0, 1.0), normal, chromaticAberrMod);
+					vec3 refractVec3 = refract(vec3(-0.05, 0.0, 1.0), normal, chromaticAberrMod);
+					vec4 refractColor1 = texture2D(bgTexture, vUv + (refractVec1.xy * edgesColor.r));
+					vec4 refractColor2 = texture2D(bgTexture, vUv + (refractVec2.xy * edgesColor.r));
+					vec4 refractColor3 = texture2D(bgTexture, vUv + (refractVec3.xy * edgesColor.r));
 
-					chromAberrColor += color;
-					
-					gl_FragColor = vec4(chromAberrColor);
+					vec4 chromAberrColor = vec4(refractColor1.r, refractColor2.g, refractColor3.b, 1.0);
+
+					vec3 refractVec = refract(vec3(0.0, 0.0, 1.0), normal, 0.0);
+					vec4 refractColor = texture2D(bgTexture, vUv + (refractVec.xy * edgesColor.r));
+
+					vec4 color = refractColor;
+
+					// mix in chromatic aberration colors
+					color = mix(refractColor, chromAberrColor, edgesColor.r);
+
+					// mix in the edges color white
+					color = mix(color, edgesColor, edgesColor.r / edgesRenderStrength);
+
+
+					gl_FragColor = vec4(color);
 				}
 			`,
 			vertexShader: `
 				precision highp float;
 				attribute vec2 position;
+				attribute vec2 uv;
+				varying vec2 vUv;
 				
 				void main() {
+					vUv = uv;
 					// Look ma! no projection matrix multiplication,
 					// because we pass the values directly in clip space coordinates.
 					gl_Position = vec4(position, 1.0, 1.0);
 				}
 			`,
 			uniforms: {
-				uScene: {
+				bgTexture: {
 					type: 't',
 					value: this.particlesRt.texture
 				},
-				uLogoTexture: {
+				normalsTexture: {
 					type: 't',
-					value: this.logoTexture
+					value: this.mainCrystal.rt.normals.texture
+				},
+				edgesTexture: {
+					type: 't',
+					value: this.mainCrystal.rt.edges.texture
+				},
+				edgesRenderStrength: {
+					value: this.PARAMS.edgesRenderStrength
+				},
+				chromaticAberrMod: {
+					value: this.PARAMS.chromaticAberrMod
 				},
 				uResolution: { value: resolution },
 				uTime: {
@@ -198,7 +262,7 @@ export default class WebGLView {
 	}
 
 	initLights() {
-		this.pointLight = new THREE.PointLight(0xffffff, 1, 100);
+		this.pointLight = new THREE.PointLight(0xfff0ff, 1, 100);
 		this.pointLight.position.set(0, 0, 50);
 		this.particlesRtScene.add(this.pointLight);
 	}
