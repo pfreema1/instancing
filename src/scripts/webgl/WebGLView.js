@@ -240,7 +240,7 @@ export default class WebGLView {
 					z range: 10 to -50
 			*/
 		mesh.position.x = remap(Math.random(), 0, 1, -30, 30);
-		mesh.position.y = remap(Math.random(), 0, 1, -15, 15);
+		mesh.position.y = remap(Math.random(), 0, 1, -25, 25);
 		mesh.position.z = remap(Math.random(), 0, 1, -20, 10);
 
 		mesh.rotation.x = Math.random() * 2 * Math.PI;
@@ -262,8 +262,8 @@ export default class WebGLView {
 	}
 
 	checkEdge(particle) {
-		if (particle.position.y > 15) {
-			particle.position.y = -15;
+		if (particle.position.y > 25) {
+			particle.position.y = -25;
 		}
 	}
 
@@ -333,7 +333,6 @@ export default class WebGLView {
 	}
 
 	draw() {
-		console.log(this.mouse.y);
 		if (this.mainCrystal) {
 			// rotate crystals
 			this.mainCrystal.meshes.edges.rotation.y += this.mouse.y * 0.009;
