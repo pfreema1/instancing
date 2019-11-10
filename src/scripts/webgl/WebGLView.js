@@ -50,7 +50,7 @@ export default class WebGLView {
 		this.initLights();
 		this.initControls();
 		// this.initPostProcessing();
-		this.mainCrystal = new Crystal(this.PARAMS);
+		this.initMainCrystal();
 		// this.addPaneParams();
 		this.initMouseListener();
 
@@ -59,6 +59,23 @@ export default class WebGLView {
 		this.initParticlesBlurTri();
 		this.initCrystalRenderTri();
 
+	}
+
+	initMainCrystal() {
+		this.mainCrystal = new Crystal(this.PARAMS);
+
+		// caching references
+		this.mainCrystalEdgesMesh = this.mainCrystal.meshes.edges;
+		this.mainCrystalNormalsMesh = this.mainCrystal.meshes.normals;
+
+		this.mainCrystalEdgesRt = this.mainCrystal.rt.edges;
+		this.mainCrystalNormalsRt = this.mainCrystal.rt.normals;
+
+		this.mainCrystalEdgesScene = this.mainCrystal.scenes.edges;
+		this.mainCrystalEdgesCamera = this.mainCrystal.cameras.edges;
+
+		this.mainCrystalNormalsScene = this.mainCrystal.scenes.normals;
+		this.mainCrystalNormalsCamera = this.mainCrystal.cameras.normals;
 	}
 
 	initMouseListener() {
@@ -86,6 +103,11 @@ export default class WebGLView {
 		this.particlesBlurTri.uniforms = uniforms;
 
 		this.particlesBlurTri.scene.add(this.particlesBlurTri.mesh);
+
+		// caching references
+		this.particlesBlurTriRt = this.particlesBlurTri.rt;
+		this.particlesBlurTriScene = this.particlesBlurTri.scene;
+		this.particlesBlurTriCamera = this.particlesBlurTri.camera;
 
 	}
 
@@ -321,9 +343,9 @@ export default class WebGLView {
 		const delta = this.clock.getDelta();
 		const time = performance.now() * 0.0005;
 
-		if (this.triMaterial) {
-			this.triMaterial.uniforms.uTime.value = time;
-		}
+		// if (this.triMaterial) {
+		// 	this.triMaterial.uniforms.uTime.value = time;
+		// }
 
 		if (this.particleCount) {
 			this.updateParticles();
@@ -335,12 +357,12 @@ export default class WebGLView {
 	draw() {
 		if (this.mainCrystal) {
 			// rotate crystals
-			this.mainCrystal.meshes.edges.rotation.y += this.mouse.y * 0.009;
-			this.mainCrystal.meshes.edges.rotation.z += this.mouse.x * 0.009;
-			this.mainCrystal.meshes.edges.rotation.x += 0.005;
-			this.mainCrystal.meshes.normals.rotation.y += this.mouse.y * 0.009;
-			this.mainCrystal.meshes.normals.rotation.z += this.mouse.x * 0.009;
-			this.mainCrystal.meshes.normals.rotation.x += 0.005;
+			this.mainCrystalEdgesMesh.rotation.y += this.mouse.y * 0.009;
+			this.mainCrystalEdgesMesh.rotation.z += this.mouse.x * 0.009;
+			this.mainCrystalEdgesMesh.rotation.x += 0.005;
+			this.mainCrystalNormalsMesh.rotation.y += this.mouse.y * 0.009;
+			this.mainCrystalNormalsMesh.rotation.z += this.mouse.x * 0.009;
+			this.mainCrystalNormalsMesh.rotation.x += 0.005;
 
 
 			// render bg particles
@@ -349,23 +371,23 @@ export default class WebGLView {
 			this.renderer.setRenderTarget(null);
 
 			// render blurred bg particles
-			this.renderer.setRenderTarget(this.particlesBlurTri.rt);
-			this.renderer.render(this.particlesBlurTri.scene, this.particlesBlurTri.camera);
+			this.renderer.setRenderTarget(this.particlesBlurTriRt);
+			this.renderer.render(this.particlesBlurTriScene, this.particlesBlurTriCamera);
 			this.renderer.setRenderTarget(null);
 
 			// render crystal edges
-			this.renderer.setRenderTarget(this.mainCrystal.rt.edges);
+			this.renderer.setRenderTarget(this.mainCrystalEdgesRt);
 			this.renderer.render(
-				this.mainCrystal.scenes.edges,
-				this.mainCrystal.cameras.edges
+				this.mainCrystalEdgesScene,
+				this.mainCrystalEdgesCamera
 			);
 			this.renderer.setRenderTarget(null);
 
 			// render crystal normal
-			this.renderer.setRenderTarget(this.mainCrystal.rt.normals);
+			this.renderer.setRenderTarget(this.mainCrystalNormalsRt);
 			this.renderer.render(
-				this.mainCrystal.scenes.normals,
-				this.mainCrystal.cameras.normals
+				this.mainCrystalNormalsScene,
+				this.mainCrystalNormalsCamera
 			);
 			this.renderer.setRenderTarget(null);
 

@@ -18,6 +18,7 @@ void main() {
 
     float aspect = uResolution.x / uResolution.y;
 
+    // 0.01
     vec4 blurColor = vec4(blur(vUv, 0.01, aspect), 1.0);
     gl_FragColor = vec4(bgColor + blurColor);
 }   
