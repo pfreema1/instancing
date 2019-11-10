@@ -43,7 +43,7 @@ export default class WebGLView {
 			pointLightDecay: 1
 		};
 
-		this.pane = new Tweakpane();
+		// this.pane = new Tweakpane();
 		this.initThree();
 		this.initParticlesRenderTarget();
 		this.initObjects();
@@ -51,13 +51,22 @@ export default class WebGLView {
 		this.initControls();
 		// this.initPostProcessing();
 		this.mainCrystal = new Crystal(this.PARAMS);
-		this.addPaneParams();
+		// this.addPaneParams();
+		this.initMouseListener();
 
 		this.resize();
 
 		this.initParticlesBlurTri();
 		this.initCrystalRenderTri();
 
+	}
+
+	initMouseListener() {
+		this.mouse = new THREE.Vector2();
+		this.renderer.domElement.addEventListener('mousemove', (e) => {
+			this.mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+			this.mouse.y = -(e.clientY / window.innerHeight) * 2 + 1
+		});
 	}
 
 	initParticlesBlurTri() {
@@ -324,12 +333,16 @@ export default class WebGLView {
 	}
 
 	draw() {
+		console.log(this.mouse.y);
 		if (this.mainCrystal) {
 			// rotate crystals
-			this.mainCrystal.meshes.edges.rotation.y += 0.005;
-			this.mainCrystal.meshes.edges.rotation.z += 0.005;
-			this.mainCrystal.meshes.normals.rotation.y += 0.005;
-			this.mainCrystal.meshes.normals.rotation.z += 0.005;
+			this.mainCrystal.meshes.edges.rotation.y += this.mouse.y * 0.009;
+			this.mainCrystal.meshes.edges.rotation.z += this.mouse.x * 0.009;
+			this.mainCrystal.meshes.edges.rotation.x += 0.005;
+			this.mainCrystal.meshes.normals.rotation.y += this.mouse.y * 0.009;
+			this.mainCrystal.meshes.normals.rotation.z += this.mouse.x * 0.009;
+			this.mainCrystal.meshes.normals.rotation.x += 0.005;
+
 
 			// render bg particles
 			this.renderer.setRenderTarget(this.particlesRt);
