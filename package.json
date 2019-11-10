@@ -23,6 +23,7 @@
     "@brunoimbrizi/controlkit": "^0.1.99",
     "async-preloader": "^4.8.1",
     "domready": "^1.0.8",
+    "glsl-hash-blur": "^1.0.3",
     "postprocessing": "^6.8.8",
     "stats.js": "^0.17.0",
     "three": "^0.110.0",

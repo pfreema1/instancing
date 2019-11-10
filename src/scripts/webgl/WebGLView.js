@@ -14,6 +14,7 @@ import RenderTri from './RenderTri';
 import Tweakpane from 'tweakpane';
 import crystalFrag from '../../shaders/crystal.frag';
 import crystalVert from '../../shaders/crystal.vert';
+import particlesBlurFrag from '../../shaders/particlesBlur.frag';
 
 function remap(t, old_min, old_max, new_min, new_max) {
 	let old_range = old_max - old_min;
@@ -60,7 +61,23 @@ export default class WebGLView {
 	}
 
 	initParticlesBlurTri() {
-		this.particlesBlurTri = new RenderTri(this.renderer, null, null, null);
+		this.resolution = new THREE.Vector2();
+		this.renderer.getDrawingBufferSize(this.resolution);
+		let uniforms = {
+			bgTexture: { value: this.particlesRt.texture },
+			uResolution: { value: this.resolution },
+		};
+
+
+		this.particlesBlurTri = new RenderTri(this.renderer, particlesBlurFrag, null, uniforms);
+
+		this.particlesBlurTri.scene = new THREE.Scene();
+		this.particlesBlurTri.camera = new THREE.OrthographicCamera();
+
+		this.particlesBlurTri.uniforms = uniforms;
+
+		this.particlesBlurTri.scene.add(this.particlesBlurTri.mesh);
+
 	}
 
 	initCrystalRenderTri() {
@@ -74,6 +91,10 @@ export default class WebGLView {
 			bgTexture: {
 				type: 't',
 				value: this.particlesRt.texture
+			},
+			blurBgTexture: {
+				type: 't',
+				value: this.particlesBlurTri.rt.texture
 			},
 			normalsTexture: {
 				type: 't',
@@ -313,6 +334,11 @@ export default class WebGLView {
 			// render bg particles
 			this.renderer.setRenderTarget(this.particlesRt);
 			this.renderer.render(this.particlesRtScene, this.particlesRtCamera);
+			this.renderer.setRenderTarget(null);
+
+			// render blurred bg particles
+			this.renderer.setRenderTarget(this.particlesBlurTri.rt);
+			this.renderer.render(this.particlesBlurTri.scene, this.particlesBlurTri.camera);
 			this.renderer.setRenderTarget(null);
 
 			// render crystal edges
