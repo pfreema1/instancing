@@ -46,7 +46,6 @@ export default class WebGLView {
 		this.initObjects();
 		this.initLights();
 		this.initControls();
-		await this.loadLogoTexture();
 		// this.initPostProcessing();
 		this.mainCrystal = new Crystal(this.PARAMS);
 		this.addPaneParams();
@@ -101,17 +100,6 @@ export default class WebGLView {
 		this.renderer.autoClear = true;
 
 		this.clock = new THREE.Clock();
-	}
-
-	loadLogoTexture() {
-		return new Promise((res, rej) => {
-			let loader = new THREE.TextureLoader();
-
-			loader.load('./logo-final-final.png', texture => {
-				this.logoTexture = texture;
-				res();
-			});
-		});
 	}
 
 	returnRenderTriGeometry() {
